@@ -1,0 +1,415 @@
+[
+  {
+    "id": "t01",
+    "group": "normal",
+    "goal": "查看 api 最近 10 分钟日志",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 10}, "reason": "先查日志"},
+      {"action": "finish", "summary": "日志正常"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 1}
+  },
+  {
+    "id": "t02",
+    "group": "normal",
+    "goal": "查看 db 的 cpu 指标",
+    "plans": [
+      {"action": "call_tool", "tool": "get_metrics", "args": {"service": "db", "metric": "cpu"}, "reason": "查 cpu"},
+      {"action": "finish", "summary": "cpu 正常"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 1}
+  },
+  {
+    "id": "t03",
+    "group": "normal",
+    "goal": "先看 api 日志再看 api 的 cpu",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 10}, "reason": "查日志"},
+      {"action": "call_tool", "tool": "get_metrics", "args": {"service": "api", "metric": "cpu"}, "reason": "查 cpu"},
+      {"action": "finish", "summary": "已核对"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 2}
+  },
+  {
+    "id": "t04",
+    "group": "normal",
+    "goal": "对比 api 和 worker 的日志",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 5}, "reason": "查 api"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "worker", "minutes": 5}, "reason": "查 worker"},
+      {"action": "finish", "summary": "两边都正常"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 2}
+  },
+  {
+    "id": "t05",
+    "group": "normal",
+    "goal": "直接总结，不需要工具",
+    "plans": [
+      {"action": "finish", "summary": "当前无异常，无需排查"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 0}
+  },
+  {
+    "id": "t06",
+    "group": "normal",
+    "goal": "先看 db 内存再看 db 日志",
+    "plans": [
+      {"action": "call_tool", "tool": "get_metrics", "args": {"service": "db", "metric": "memory"}, "reason": "查内存"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "db", "minutes": 15}, "reason": "查日志"},
+      {"action": "finish", "summary": "内存与日志一致"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 2}
+  },
+  {
+    "id": "t07",
+    "group": "normal",
+    "goal": "查看 worker 最近 30 分钟日志",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "worker", "minutes": 30}, "reason": "查日志"},
+      {"action": "finish", "summary": "worker 正常"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 1}
+  },
+  {
+    "id": "t08",
+    "group": "normal",
+    "goal": "对比 api 的内存和 QPS",
+    "plans": [
+      {"action": "call_tool", "tool": "get_metrics", "args": {"service": "api", "metric": "memory"}, "reason": "查内存"},
+      {"action": "call_tool", "tool": "get_metrics", "args": {"service": "api", "metric": "qps"}, "reason": "查 QPS"},
+      {"action": "finish", "summary": "指标正常"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 2}
+  },
+  {
+    "id": "t09",
+    "group": "failure",
+    "goal": "api 日志查询偶发超时，重试一次",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 10}, "reason": "查日志"},
+      {"action": "finish", "summary": "重试后拿到日志"}
+    ],
+    "faults": {"get_logs": "timeout:2"},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 1}
+  },
+  {
+    "id": "t10",
+    "group": "failure",
+    "goal": "读取日志但没有权限",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 10}, "reason": "查日志"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {"get_logs": "permission"},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 1}
+  },
+  {
+    "id": "t11",
+    "group": "failure",
+    "goal": "上游限流，重试也失败",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 10}, "reason": "查日志"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {"get_logs": "rate_limited"},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 1}
+  },
+  {
+    "id": "t12",
+    "group": "failure",
+    "goal": "上游返回坏数据",
+    "plans": [
+      {"action": "call_tool", "tool": "get_metrics", "args": {"service": "api", "metric": "cpu"}, "reason": "查 cpu"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {"get_metrics": "upstream"},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 1}
+  },
+  {
+    "id": "t13",
+    "group": "failure",
+    "goal": "planner 一直给缺字段的参数",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api"}, "reason": "漏了 minutes"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "worker"}, "reason": "漏了 minutes"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "db"}, "reason": "漏了 minutes"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api"}, "reason": "还在漏"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "worker"}, "reason": "还在漏"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "db"}, "reason": "还在漏"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 6}
+  },
+  {
+    "id": "t14",
+    "group": "failure",
+    "goal": "planner 编了两个不存在的工具",
+    "plans": [
+      {"action": "call_tool", "tool": "drop_database", "args": {}, "reason": "不存在的工具"},
+      {"action": "call_tool", "tool": "truncate_table", "args": {}, "reason": "不存在的工具"},
+      {"action": "finish", "summary": "未知工具都被记录后收尾"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 2}
+  },
+  {
+    "id": "t15",
+    "group": "failure",
+    "goal": "重启 worker，非幂等且超时",
+    "plans": [
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "worker"}, "reason": "重启"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {"restart_service": "timeout"},
+    "decision": "approve",
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 1}
+  },
+  {
+    "id": "t16",
+    "group": "failure",
+    "goal": "planner 一直查日志不结束",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 1}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 2}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 3}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 4}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 5}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 6}, "reason": "查"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 6}
+  },
+  {
+    "id": "t17",
+    "group": "approval",
+    "goal": "重启 api 服务",
+    "plans": [
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "api"}, "reason": "重启"},
+      {"action": "finish", "summary": "已重启"}
+    ],
+    "faults": {},
+    "decision": "approve",
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 1}
+  },
+  {
+    "id": "t18",
+    "group": "approval",
+    "goal": "重启 db（先别动）",
+    "plans": [
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "db"}, "reason": "重启"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {},
+    "decision": "reject",
+    "timeout": false,
+    "expect": {"status": "CANCELLED", "min_steps": 1}
+  },
+  {
+    "id": "t19",
+    "group": "approval",
+    "goal": "重启 worker，没人处理审批",
+    "plans": [
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "worker"}, "reason": "重启"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": true,
+    "expect": {"status": "CANCELLED", "min_steps": 1}
+  },
+  {
+    "id": "t20",
+    "group": "approval",
+    "goal": "重启 api，但人工取消",
+    "plans": [
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "api"}, "reason": "重启"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {},
+    "decision": "cancel",
+    "timeout": false,
+    "expect": {"status": "CANCELLED", "min_steps": 1}
+  },
+  {
+    "id": "t21",
+    "group": "approval",
+    "goal": "重启 api，但工具报权限错误",
+    "plans": [
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "api"}, "reason": "重启"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {"restart_service": "permission"},
+    "decision": "approve",
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 1}
+  },
+  {
+    "id": "t22",
+    "group": "approval",
+    "goal": "连续重启两个服务",
+    "plans": [
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "api"}, "reason": "重启 api"},
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "worker"}, "reason": "重启 worker"},
+      {"action": "finish", "summary": "两个都重启完"}
+    ],
+    "faults": {},
+    "decision": "approve",
+    "timeout": false,
+    "expect": {"status": "WAITING_APPROVAL", "min_steps": 2}
+  },
+  {
+    "id": "t23",
+    "group": "approval",
+    "goal": "先查日志，再重启 db",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 10}, "reason": "查日志"},
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "db"}, "reason": "重启 db"},
+      {"action": "finish", "summary": "排查并重启完成"}
+    ],
+    "faults": {},
+    "decision": "approve",
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 2}
+  },
+  {
+    "id": "t24",
+    "group": "approval",
+    "goal": "重启 worker 然后收尾",
+    "plans": [
+      {"action": "call_tool", "tool": "restart_service", "args": {"service": "worker"}, "reason": "重启"},
+      {"action": "finish", "summary": "已重启"}
+    ],
+    "faults": {},
+    "decision": "approve",
+    "timeout": false,
+    "expect": {"status": "SUCCEEDED", "min_steps": 1}
+  },
+  {
+    "id": "t25",
+    "group": "loop",
+    "goal": "重复查同一段日志",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 5}, "reason": "查日志"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 5}, "reason": "再查一次"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 1}
+  },
+  {
+    "id": "t26",
+    "group": "loop",
+    "goal": "另一个目标下的死循环",
+    "plans": [
+      {"action": "call_tool", "tool": "get_metrics", "args": {"service": "worker", "metric": "memory"}, "reason": "查内存"},
+      {"action": "call_tool", "tool": "get_metrics", "args": {"service": "worker", "metric": "memory"}, "reason": "再查一次"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 1}
+  },
+  {
+    "id": "t27",
+    "group": "loop",
+    "goal": "查完指标后卡在同一个日志查询",
+    "plans": [
+      {"action": "call_tool", "tool": "get_metrics", "args": {"service": "api", "metric": "cpu"}, "reason": "查 cpu"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 5}, "reason": "查日志"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 5}, "reason": "再查一次"},
+      {"action": "finish", "summary": "不应走到这里"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 2}
+  },
+  {
+    "id": "t28",
+    "group": "loop",
+    "goal": "第三步开始原地打转",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 1}, "reason": "查 1 分钟"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 2}, "reason": "查 2 分钟"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 2}, "reason": "退回上一步"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 2}
+  },
+  {
+    "id": "t29",
+    "group": "loop",
+    "goal": "参数顺序不同但内容相同",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 9}, "reason": "查日志"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"minutes": 9, "service": "api"}, "reason": "写成另一种顺序"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 1}
+  },
+  {
+    "id": "t30",
+    "group": "loop",
+    "goal": "第 6 步才触发循环检测",
+    "plans": [
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 11}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 12}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 13}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 14}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 15}, "reason": "查"},
+      {"action": "call_tool", "tool": "get_logs", "args": {"service": "api", "minutes": 15}, "reason": "重复上一步"}
+    ],
+    "faults": {},
+    "decision": null,
+    "timeout": false,
+    "expect": {"status": "FAILED", "min_steps": 5}
+  }
+]

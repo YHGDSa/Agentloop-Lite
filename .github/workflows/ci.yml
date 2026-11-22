@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  offline:
+    name: Offline tests + scripted eval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # No LLM_* secrets are configured on purpose: the whole suite is offline
+      # (scripted planner, mock tools). A key must never be needed to pass CI.
+      - name: Unit and integration tests
+        run: pytest -q
+
+      - name: Scripted 30-task eval (delta must stay 30/30)
+        env:
+          EVAL_STRICT: "1"
+        run: python eval/run_eval.py

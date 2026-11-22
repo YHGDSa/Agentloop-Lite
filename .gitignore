@@ -1,0 +1,13 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+*.db
+data/
+.tmp/
+eval/.tmp/
+ui/*.db
+ui/.data/
+.DS_Store
